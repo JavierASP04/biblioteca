@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-biblioteca}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-biblioteca}
+      POSTGRES_DB: ${POSTGRES_DB:-biblioteca}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-biblioteca} -d ${POSTGRES_DB:-biblioteca}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      PRODUCTION: "1"
+      PORT: "8000"
+      TZ: America/Caracas
+      SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY en el archivo .env}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-biblioteca}:${POSTGRES_PASSWORD:-biblioteca}@db:5432/${POSTGRES_DB:-biblioteca}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@escuela.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 25s
+
+volumes:
+  pgdata:

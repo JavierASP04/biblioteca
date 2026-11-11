@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block page_title %}Búsqueda{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-search"></i> Búsqueda</h1>
+        <p>{% if q %}Resultados para “{{ q }}”{% else %}Busque libros, miembros o préstamos{% endif %}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="get" action="{{ url_for('main.search') }}" class="filter-form">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="q">Texto</label>
+                    <input type="search" id="q" name="q" value="{{ q }}" placeholder="Título, autor, cédula o nombre" autofocus>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Buscar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if too_short %}
+<div class="empty-state">
+    <i class="fas fa-search"></i>
+    <h3>Escriba al menos 2 caracteres</h3>
+    <p>Puede buscar por título, autor, ISBN, nombre o cédula.</p>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-header"><div class="card-header-title"><i class="fas fa-book"></i> Libros <span class="badge">{{ books|length }}</span></div></div>
+    <div class="card-body p-0">
+        {% if books %}
+        <table class="table">
+            <tbody>
+                {% for book in books %}
+                <tr>
+                    <td><a class="row-link" href="{{ url_for('books.detail', id=book.id) }}">{{ book.title }}</a>
+                        <div class="student-meta">{{ book.author }}{% if book.isbn %} · {{ book.isbn }}{% endif %}</div>
+                    </td>
+                    <td>{{ book.display_status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state compact"><p>No hay libros que coincidan.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><div class="card-header-title"><i class="fas fa-user-friends"></i> Miembros <span class="badge">{{ members|length }}</span></div></div>
+    <div class="card-body p-0">
+        {% if members %}
+        <table class="table">
+            <tbody>
+                {% for member in members %}
+                <tr>
+                    <td><a class="row-link" href="{{ url_for('members.detail', id=member.id) }}">{{ member.full_name() }}</a>
+                        <div class="student-meta">{{ member.cedula }}</div>
+                    </td>
+                    <td>{{ member.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state compact"><p>No hay miembros que coincidan.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><div class="card-header-title"><i class="fas fa-hand-holding"></i> Préstamos <span class="badge">{{ loans|length }}</span></div></div>
+    <div class="card-body p-0">
+        {% if loans %}
+        <table class="table">
+            <tbody>
+                {% for loan in loans %}
+                <tr>
+                    <td>{{ loan.book.title }}
+                        <div class="student-meta">{{ loan.member.full_name() }}</div>
+                    </td>
+                    <td>{{ 'Vencido' if loan.is_overdue() else loan.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state compact"><p>No hay préstamos que coincidan.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

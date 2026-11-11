@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ member.full_name() }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-id-card"></i> {{ member.full_name() }}</h1>
+        <p>{{ member.cedula }}</p>
+    </div>
+    <div class="page-actions">
+        {% if member.status == 'Activo' %}
+        <a href="{{ url_for('loans.create_loan', member_id=member.id) }}" class="btn btn-primary">
+            <i class="fas fa-hand-holding"></i> Nuevo préstamo
+        </a>
+        {% endif %}
+        <a href="{{ url_for('members.edit_member', id=member.id) }}" class="btn btn-ghost">
+            <i class="fas fa-edit"></i> Editar
+        </a>
+        <a href="{{ url_for('members.list_members') }}" class="btn btn-ghost">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="detail-layout">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-title"><i class="fas fa-user"></i> Datos del lector</div>
+        </div>
+        <div class="card-body">
+            <p class="detail-status">
+                {% if member.status == 'Activo' %}
+                <span class="status-badge status-active">Activo</span>
+                {% else %}
+                <span class="status-badge status-inactive">Inactivo</span>
+                {% endif %}
+            </p>
+            <dl class="kv">
+                <dt>Cédula</dt><dd>{{ member.cedula }}</dd>
+                <dt>Teléfono</dt><dd>{{ member.phone or '—' }}</dd>
+                <dt>Correo</dt><dd>{{ member.email or '—' }}</dd>
+                <dt>Dirección</dt><dd>{{ member.address or '—' }}</dd>
+                <dt>Activos</dt><dd>{{ member.active_loan_count() }}</dd>
+                <dt>Historial</dt><dd>{{ loans|length }} préstamos</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-title"><i class="fas fa-history"></i> Préstamos</div>
+        </div>
+        <div class="card-body p-0">
+            {% if loans %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Libro</th>
+                            <th>Préstamo</th>
+                            <th>Entrega</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr>
+                            <td>
+                                <a class="row-link" href="{{ url_for('books.detail', id=loan.book.id) }}">{{ loan.book.title }}</a>
+                                <div class="student-meta">{{ loan.book.author }}</div>
+                            </td>
+                            <td>{{ loan.loan_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if loan.status == 'Devuelto' %}
+                                <span class="status-badge status-active">Devuelto</span>
+                                {% elif loan.is_overdue() %}
+                                <span class="status-badge status-inactive">Vencido · {{ loan.days_overdue() }} días</span>
+                                {% else %}
+                                <span class="status-badge status-overdue">Prestado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if loan.status == 'Prestado' %}
+                                <form method="POST" action="{{ url_for('loans.return_loan', id=loan.id) }}">
+                                    {% include '_csrf.html' %}
+                                    <button type="submit" class="btn btn-ghost btn-sm">Devolver</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state compact">
+                <i class="fas fa-book"></i>
+                <h3>Sin préstamos</h3>
+                <p>Este miembro todavía no ha solicitado libros.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

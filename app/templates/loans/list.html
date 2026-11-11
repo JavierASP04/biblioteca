@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block page_title %}Préstamos{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-hand-holding"></i> Préstamos de libros</h1>
+        <p>Registro, renovaciones, devoluciones y control de plazos</p>
+    </div>
+    <a href="{{ url_for('loans.create_loan') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuevo préstamo
+    </a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #F39C12, #D68910);">
+            <i class="fas fa-hand-holding"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.active }}</span>
+            <span class="stat-label">Préstamos activos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #E74C3C, #C0392B);">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.overdue }}</span>
+            <span class="stat-label">Vencidos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #27AE60, #1E8449);">
+            <i class="fas fa-undo-alt"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.returned }}</span>
+            <span class="stat-label">Devueltos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #4A90D9, #357ABD);">
+            <i class="fas fa-list"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.total }}</span>
+            <span class="stat-label">Historial total</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title"><i class="fas fa-filter"></i> Filtros</div>
+        <button class="btn btn-sm btn-ghost" type="button" onclick="toggleFilters()"><i class="fas fa-chevron-down"></i></button>
+    </div>
+    <div class="card-body" id="filterBody">
+        <form method="GET" class="filter-form">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="search">Buscar</label>
+                    <input type="text" id="search" name="search" placeholder="Libro, nombre, apellido o cédula..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="status">Estado</label>
+                    <select name="status" id="status">
+                        <option value="">Todos</option>
+                        <option value="Prestado" {{ 'selected' if request.args.get('status') == 'Prestado' }}>Prestado</option>
+                        <option value="Vencido" {{ 'selected' if request.args.get('status') == 'Vencido' }}>Vencido</option>
+                        <option value="Devuelto" {{ 'selected' if request.args.get('status') == 'Devuelto' }}>Devuelto</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Filtrar</button>
+                <a href="{{ url_for('loans.list_loans') }}" class="btn btn-ghost btn-sm"><i class="fas fa-undo"></i> Limpiar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-list"></i>
+            <span>Listado de préstamos</span>
+            <span class="badge">{{ pagination.total }}</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if loans %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Libro</th>
+                        <th>Miembro</th>
+                        <th>Préstamo</th>
+                        <th>Entrega</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in loans %}
+                    <tr>
+                        <td>
+                            <a class="row-link" href="{{ url_for('books.detail', id=l.book.id) }}">{{ l.book.title }}</a>
+                            <div class="student-meta">{{ l.book.author }}</div>
+                            {% if l.notes %}
+                            <div class="note-line" title="{{ l.notes }}">{{ l.notes }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="row-link" href="{{ url_for('members.detail', id=l.member.id) }}">{{ l.member.full_name() }}</a>
+                            <div class="student-meta">{{ l.member.cedula }}</div>
+                        </td>
+                        <td>{{ l.loan_date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if l.status == 'Devuelto' %}
+                            <div>{{ l.return_date.strftime('%d/%m/%Y') if l.return_date else '—' }}</div>
+                            <div class="student-meta">Vencía el {{ l.due_date.strftime('%d/%m/%Y') }}</div>
+                            {% else %}
+                            <div>{{ l.due_date.strftime('%d/%m/%Y') }}</div>
+                            {% if l.is_overdue() %}
+                            <div class="student-meta">{{ l.days_overdue() }} días de retraso</div>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if l.status == 'Devuelto' %}
+                            <span class="status-badge status-active">Devuelto</span>
+                            {% elif l.is_overdue() %}
+                            <span class="status-badge status-inactive">Vencido</span>
+                            {% else %}
+                            <span class="status-badge status-overdue">Prestado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                {% if l.status == 'Prestado' %}
+                                <form method="POST" action="{{ url_for('loans.return_loan', id=l.id) }}" class="d-inline">
+                                    {% include '_csrf.html' %}
+                                    <button type="submit" class="btn btn-icon btn-return" title="Registrar devolución">
+                                        <i class="fas fa-undo-alt"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('loans.renew_loan', id=l.id) }}" class="d-inline">
+                                    {% include '_csrf.html' %}
+                                    <input type="hidden" name="days" value="7">
+                                    <button type="submit" class="btn btn-icon btn-edit" title="Renovar 7 días">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('loans.delete_loan', id=l.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este préstamo?');">
+                                    {% include '_csrf.html' %}
+                                    <button type="submit" class="btn btn-icon btn-delete" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include '_pagination.html' %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-hand-holding"></i>
+            {% if request.args.get('search') or request.args.get('status') %}
+            <h3>Sin resultados</h3>
+            <p>No hay préstamos que coincidan con los filtros.</p>
+            {% else %}
+            <h3>No hay préstamos registrados</h3>
+            <p>Registre un préstamo para controlar los libros que salen de la biblioteca.</p>
+            <a href="{{ url_for('loans.create_loan') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo préstamo</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleFilters() {
+    const body = document.getElementById('filterBody');
+    body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

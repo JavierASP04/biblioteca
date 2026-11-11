@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ 'Editar' if book else 'Nuevo' }} Libro{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-{% if book %}book-open{% else %}book-medical{% endif %}"></i>
+            {{ 'Editar' if book else 'Nuevo' }} Libro
+        </h1>
+        <p>{{ 'Modifique los datos del libro' if book else 'Complete el formulario para registrar un nuevo libro' }}</p>
+    </div>
+    <a href="{{ url_for('books.list_books') }}" class="btn btn-ghost">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-info-circle"></i>
+            <span>Datos del Libro</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="POST" class="enrollment-form" id="bookForm">
+            {% include '_csrf.html' %}
+            <div class="form-section">
+                <h3 class="form-section-title"><i class="fas fa-book"></i> Información General</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="title">Título <span class="required">*</span></label>
+                        <input type="text" id="title" name="title" required
+                               value="{{ book.title if book else '' }}" placeholder="Título del libro">
+                    </div>
+                    <div class="form-group">
+                        <label for="author">Autor <span class="required">*</span></label>
+                        <input type="text" id="author" name="author" required
+                               value="{{ book.author if book else '' }}" placeholder="Nombre del autor">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="isbn">ISBN</label>
+                        <input type="text" id="isbn" name="isbn"
+                               value="{{ book.isbn if book else '' }}" placeholder="978-3-16-148410-0">
+                    </div>
+                    <div class="form-group">
+                        <label for="editorial">Editorial</label>
+                        <input type="text" id="editorial" name="editorial"
+                               value="{{ book.editorial if book else '' }}" placeholder="Nombre de la editorial">
+                    </div>
+                    <div class="form-group">
+                        <label for="publication_year">Año de Publicación</label>
+                        <input type="number" id="publication_year" name="publication_year" min="1000" max="2100"
+                               value="{{ book.publication_year if book else '' }}" placeholder="2024">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="form-section-title"><i class="fas fa-tags"></i> Clasificación</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="category_id">Categoría</label>
+                        <select id="category_id" name="category_id">
+                            <option value="">Sin categoría</option>
+                            {% for c in categories %}
+                            <option value="{{ c.id }}" {{ 'selected' if book and book.category_id == c.id }}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Ubicación</label>
+                        <input type="text" id="location" name="location"
+                               value="{{ book.location if book else '' }}" placeholder="Estante A, Nivel 2">
+                    </div>
+                    <div class="form-group">
+                        <label for="pages">Número de Páginas</label>
+                        <input type="number" id="pages" name="pages" min="1"
+                               value="{{ book.pages if book else '' }}" placeholder="350">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Breve descripción del contenido">{{ book.description if book else '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="form-section-title"><i class="fas fa-boxes"></i> Inventario</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="total_copies">Número de Ejemplares <span class="required">*</span></label>
+                        <input type="number" id="total_copies" name="total_copies" min="1" required
+                               value="{{ book.total_copies if book else '1' }}">
+                        {% if book and book.available_copies < book.total_copies %}
+                        <small class="form-hint">{{ book.available_copies }} ejemplares disponibles, {{ book.borrowed_copies }} prestados.</small>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Estado</label>
+                        <select id="status" name="status">
+                            <option value="Disponible" {{ 'selected' if not book or book.status == 'Disponible' }}>Disponible</option>
+                            <option value="Agotado" {{ 'selected' if book and book.status == 'Agotado' }}>Agotado</option>
+                            <option value="Inactivo" {{ 'selected' if book and book.status == 'Inactivo' }}>Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('books.list_books') }}" class="btn btn-ghost">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-{{ 'save' if book else 'book-medical' }}"></i>
+                    {{ 'Guardar Cambios' if book else 'Registrar Libro' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('bookForm')?.addEventListener('submit', function(e) {
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    btn.disabled = true;
+});
+</script>
+{% endblock %}

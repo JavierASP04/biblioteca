@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block page_title %}Categorías{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-tags"></i> Categorías de libros</h1>
+        <p>Clasificación del catálogo por género y temática</p>
+    </div>
+    <a href="{{ url_for('books.list_books') }}" class="btn btn-ghost">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-{{ 'edit' if editing else 'plus-circle' }}"></i>
+            <span>{{ 'Editar categoría' if editing else 'Nueva categoría' }}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('books.edit_category', id=editing.id) if editing else url_for('books.list_categories') }}" class="enrollment-form">
+            {% include '_csrf.html' %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name">Nombre <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required maxlength="80" placeholder="Ej: Literatura" value="{{ editing.name if editing else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <input type="text" id="description" name="description" maxlength="500" placeholder="Breve descripción" value="{{ editing.description if editing and editing.description else '' }}">
+                </div>
+            </div>
+            <div class="form-actions">
+                {% if editing %}
+                <a href="{{ url_for('books.list_categories') }}" class="btn btn-ghost">Cancelar</a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-{{ 'save' if editing else 'plus' }}"></i>
+                    {{ 'Guardar cambios' if editing else 'Agregar categoría' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-list"></i>
+            <span>Listado de categorías</span>
+            <span class="badge">{{ categories|length }}</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if categories %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Libros</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in categories %}
+                    <tr>
+                        <td><span class="badge badge-section">{{ c.name }}</span></td>
+                        <td>{{ c.description or '—' }}</td>
+                        <td><span class="badge">{{ c.books|length }}</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('books.edit_category', id=c.id) }}" class="btn btn-icon btn-edit" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('books.delete_category', id=c.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar esta categoría?');">
+                                    {% include '_csrf.html' %}
+                                    <button type="submit" class="btn btn-icon btn-delete" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-tags"></i>
+            <h3>No hay categorías registradas</h3>
+            <p>Agregue categorías para clasificar el catálogo.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

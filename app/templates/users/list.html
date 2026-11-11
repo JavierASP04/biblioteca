@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block page_title %}Usuarios{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-user-shield"></i> Usuarios del sistema</h1>
+        <p>Personal autorizado para administrar la biblioteca</p>
+    </div>
+    <a href="{{ url_for('users.create_user') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus"></i> Nuevo usuario
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Correo</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Desde</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <div class="student-name">{{ user.name }}</div>
+                            {% if user.id == current_user.id %}
+                            <div class="student-meta">Esta es su cuenta</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td><span class="badge badge-section">{{ user.role }}</span></td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="status-badge status-active">Activo</span>
+                            {% else %}
+                            <span class="status-badge status-inactive">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else '—' }}</td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('users.edit_user', id=user.id) }}" class="btn btn-icon btn-edit" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if user.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('users.delete_user', id=user.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este usuario?');">
+                                    {% include '_csrf.html' %}
+                                    <button type="submit" class="btn btn-icon btn-delete" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ 'Editar usuario' if user else 'Nuevo usuario' }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-user-shield"></i> {{ 'Editar usuario' if user else 'Nuevo usuario' }}</h1>
+        <p>{{ 'Actualice el acceso del personal' if user else 'Cree una cuenta para el personal de la biblioteca' }}</p>
+    </div>
+    <a href="{{ url_for('users.list_users') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" class="enrollment-form" id="userForm">
+            {% include '_csrf.html' %}
+            <div class="form-section">
+                <h3 class="form-section-title"><i class="fas fa-id-badge"></i> Datos de acceso</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Nombre <span class="required">*</span></label>
+                        <input type="text" id="name" name="name" required maxlength="100" value="{{ user.name if user else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Correo <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required maxlength="120" value="{{ user.email if user else '' }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="role">Rol</label>
+                        <select id="role" name="role">
+                            <option value="Bibliotecario" {{ 'selected' if not user or user.role == 'Bibliotecario' }}>Bibliotecario</option>
+                            <option value="Administrador" {{ 'selected' if user and user.role == 'Administrador' }}>Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña {% if not user %}<span class="required">*</span>{% endif %}</label>
+                        <input type="password" id="password" name="password" minlength="8" autocomplete="new-password" {% if not user %}required{% endif %}>
+                        {% if user %}<small class="form-hint">Déjela en blanco para conservar la actual.</small>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirmar contraseña {% if not user %}<span class="required">*</span>{% endif %}</label>
+                        <input type="password" id="confirm_password" name="confirm_password" minlength="8" autocomplete="new-password" {% if not user %}required{% endif %}>
+                    </div>
+                </div>
+                <label class="check-line">
+                    <input type="checkbox" name="is_active" value="1" {{ 'checked' if not user or user.is_active }}>
+                    <span>Cuenta activa</span>
+                </label>
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('users.list_users') }}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-save"></i> {{ 'Guardar cambios' if user else 'Crear usuario' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

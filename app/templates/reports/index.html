@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block page_title %}Reportes{% endblock %}
+{% block content %}
+<div class="print-only">
+    <h1>E.B. Américo Briceño Valero</h1>
+    <p>Reporte de biblioteca · {{ today.strftime('%d/%m/%Y') }}</p>
+</div>
+
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-chart-bar"></i> Reportes</h1>
+        <p>Resumen del inventario, préstamos y lectores. Los CSV se abren en Excel.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-ghost" onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+    </div>
+</div>
+
+<div class="export-actions">
+    <a class="btn btn-primary btn-sm" href="{{ url_for('reports.books_csv') }}"><i class="fas fa-file-csv"></i> Inventario</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('reports.loans_csv', estado='vencidos') }}"><i class="fas fa-file-csv"></i> Vencidos</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('reports.loans_csv', estado='activos') }}"><i class="fas fa-file-csv"></i> Préstamos activos</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('reports.loans_csv') }}"><i class="fas fa-file-csv"></i> Historial de préstamos</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('reports.members_csv') }}"><i class="fas fa-file-csv"></i> Miembros</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #4A90D9, #357ABD);"><i class="fas fa-book"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.books }}</span>
+            <span class="stat-label">Títulos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #27AE60, #1E8449);"><i class="fas fa-book-open"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.available }}</span>
+            <span class="stat-label">Ejemplares disponibles</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #F39C12, #D68910);"><i class="fas fa-hand-holding"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.active_loans }}</span>
+            <span class="stat-label">Préstamos activos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #E74C3C, #C0392B);"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.overdue }}</span>
+            <span class="stat-label">Vencidos</span>
+        </div>
+    </div>
+</div>
+
+<div class="split-grid">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-title"><i class="fas fa-tags"></i> Inventario por categoría</div>
+        </div>
+        <div class="card-body p-0">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Categoría</th>
+                        <th>Títulos</th>
+                        <th>Ejemplares</th>
+                        <th>Disponibles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in categories %}
+                    <tr>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.titles }}</td>
+                        <td>{{ row.copies }}</td>
+                        <td>{{ row.available }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">No hay categorías.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-title"><i class="fas fa-star"></i> Libros más prestados</div>
+        </div>
+        <div class="card-body p-0">
+            {% if top_books %}
+            <table class="table">
+                <thead>
+                    <tr><th>Título</th><th>Préstamos</th></tr>
+                </thead>
+                <tbody>
+                    {% for book, total in top_books %}
+                    <tr>
+                        <td><a class="row-link" href="{{ url_for('books.detail', id=book.id) }}">{{ book.title }}</a></td>
+                        <td>{{ total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state compact">
+                <i class="fas fa-star"></i>
+                <h3>Todavía no hay préstamos</h3>
+                <p>El ranking aparecerá cuando se registren salidas.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-exclamation-triangle"></i> Préstamos vencidos
+            <span class="badge">{{ overdue_loans|length }}</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if overdue_loans %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Libro</th>
+                        <th>Miembro</th>
+                        <th>Teléfono</th>
+                        <th>Venció</th>
+                        <th>Retraso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in overdue_loans %}
+                    <tr>
+                        <td>{{ loan.book.title }}</td>
+                        <td>{{ loan.member.full_name() }}</td>
+                        <td>{{ loan.member.phone or '—' }}</td>
+                        <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ loan.days_overdue() }} días</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state compact">
+            <i class="fas fa-check-circle"></i>
+            <h3>Sin retrasos</h3>
+            <p>No hay préstamos fuera de fecha.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-hand-holding"></i> Préstamos activos
+            <span class="badge">{{ active_total }}</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if active_loans %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Libro</th>
+                        <th>Miembro</th>
+                        <th>Entrega</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in active_loans %}
+                    <tr>
+                        <td>{{ loan.book.title }}</td>
+                        <td>{{ loan.member.full_name() }}</td>
+                        <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ 'Vencido' if loan.is_overdue() else 'En plazo' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if active_total > active_loans|length %}
+        <p class="table-note">Se muestran {{ active_loans|length }} de {{ active_total }}. Descargue el CSV para el listado completo.</p>
+        {% endif %}
+        {% else %}
+        <div class="empty-state compact">
+            <i class="fas fa-hand-holding"></i>
+            <h3>No hay préstamos activos</h3>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

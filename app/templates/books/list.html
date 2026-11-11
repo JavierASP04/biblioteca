@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block page_title %}Inventario de Libros{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-book"></i> Inventario de Libros</h1>
+        <p>Registro y control del catálogo de la biblioteca</p>
+    </div>
+    <a href="{{ url_for('books.create_book') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuevo libro
+    </a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #4A90D9, #357ABD);">
+            <i class="fas fa-book"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.total }}</span>
+            <span class="stat-label">Total de libros</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #27AE60, #1E8449);">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.available }}</span>
+            <span class="stat-label">Disponibles</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #F39C12, #D68910);">
+            <i class="fas fa-hand-holding"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.out }}</span>
+            <span class="stat-label">Con préstamos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #9B59B6, #7D3C98);">
+            <i class="fas fa-tags"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.categories }}</span>
+            <span class="stat-label">Categorías</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-filter"></i>
+            <span>Filtros</span>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button" onclick="toggleFilters()">
+            <i class="fas fa-chevron-down"></i>
+        </button>
+    </div>
+    <div class="card-body" id="filterBody">
+        <form method="GET" class="filter-form">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="search">Buscar</label>
+                    <input type="text" id="search" name="search" placeholder="Título, autor o ISBN..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="category_id">Categoría</label>
+                    <select name="category_id" id="category_id">
+                        <option value="">Todas</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}" {{ 'selected' if request.args.get('category_id') == c.id|string }}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status">Estado</label>
+                    <select name="status" id="status">
+                        <option value="">Todos</option>
+                        <option value="Disponible" {{ 'selected' if request.args.get('status') == 'Disponible' }}>Disponible</option>
+                        <option value="Agotado" {{ 'selected' if request.args.get('status') == 'Agotado' }}>Agotado</option>
+                        <option value="Inactivo" {{ 'selected' if request.args.get('status') == 'Inactivo' }}>Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+                <a href="{{ url_for('books.list_books') }}" class="btn btn-ghost btn-sm">
+                    <i class="fas fa-undo"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-list"></i>
+            <span>Listado de libros</span>
+            <span class="badge">{{ pagination.total }}</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if books %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ISBN</th>
+                        <th>Título</th>
+                        <th>Autor</th>
+                        <th>Categoría</th>
+                        <th>Edición</th>
+                        <th>Ejemplares</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in books %}
+                    <tr>
+                        <td><span class="cedula">{{ b.isbn or '—' }}</span></td>
+                        <td>
+                            <a class="row-link" href="{{ url_for('books.detail', id=b.id) }}">{{ b.title }}</a>
+                            <div class="student-meta">{{ b.editorial or '—' }}{{ ' · ' ~ b.location if b.location }}</div>
+                        </td>
+                        <td>{{ b.author }}</td>
+                        <td><span class="badge badge-section">{{ b.category.name if b.category else 'Sin categoría' }}</span></td>
+                        <td>
+                            {% if b.publication_year %}
+                            <div>{{ b.publication_year }}</div>
+                            <div class="student-meta">{{ b.pages or '—' }} páginas</div>
+                            {% else %}
+                            <span class="student-meta">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="copies">
+                                <span class="copies-available">{{ b.available_copies }}</span>
+                                <span class="copies-total">/ {{ b.total_copies }}</span>
+                            </div>
+                            {% if b.borrowed_copies > 0 %}
+                            <div class="student-meta">{{ b.borrowed_copies }} prestados</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set label = b.display_status %}
+                            <span class="status-badge {{ 'status-active' if label == 'Disponible' else ('status-muted' if label == 'Inactivo' else 'status-inactive') }}">{{ label }}</span>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('books.detail', id=b.id) }}" class="btn btn-icon btn-edit" title="Ver ficha">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('books.edit_book', id=b.id) }}" class="btn btn-icon btn-edit" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('books.delete_book', id=b.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este libro? Esta acción no se puede deshacer.');">
+                                    {% include '_csrf.html' %}
+                                    <button type="submit" class="btn btn-icon btn-delete" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include '_pagination.html' %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-book"></i>
+            {% if request.args.get('search') or request.args.get('status') or request.args.get('category_id') %}
+            <h3>Sin resultados</h3>
+            <p>No hay libros que coincidan con los filtros.</p>
+            {% else %}
+            <h3>No hay libros registrados</h3>
+            <p>Comience registrando un libro en el catálogo.</p>
+            <a href="{{ url_for('books.create_book') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Registrar libro
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleFilters() {
+    const body = document.getElementById('filterBody');
+    body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ code }} · {{ title }}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="error-page">
+    <div class="error-card">
+        <div class="error-code">{{ code }}</div>
+        <h1>{{ title }}</h1>
+        <p>{{ message }}</p>
+        {% if current_user.is_authenticated %}
+        <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}">Volver al panel</a>
+        {% else %}
+        <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Ir al inicio de sesión</a>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block page_title %}Mi cuenta{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-user-cog"></i> Mi cuenta</h1>
+        <p>{{ current_user.email }} · {{ current_user.role }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" class="enrollment-form" id="accountForm">
+            {% include '_csrf.html' %}
+            <div class="form-section">
+                <h3 class="form-section-title"><i class="fas fa-user"></i> Perfil</h3>
+                <div class="form-group">
+                    <label for="name">Nombre <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required maxlength="100" value="{{ request.form.get('name') or current_user.name }}">
+                </div>
+            </div>
+            <div class="form-section">
+                <h3 class="form-section-title"><i class="fas fa-lock"></i> Cambiar contraseña</h3>
+                <p class="form-hint">Complete estos campos solo si desea cambiar la contraseña.</p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="current_password">Contraseña actual</label>
+                        <input type="password" id="current_password" name="current_password" autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">Nueva contraseña</label>
+                        <input type="password" id="new_password" name="new_password" minlength="8" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirmar nueva contraseña</label>
+                        <input type="password" id="confirm_password" name="confirm_password" minlength="8" autocomplete="new-password">
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block page_title %}Miembros y Lectores{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-text">
+        <h1><i class="fas fa-user-friends"></i> Miembros de la biblioteca</h1>
+        <p>Administración de los lectores registrados</p>
+    </div>
+    <a href="{{ url_for('members.create_member') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuevo miembro
+    </a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #4A90D9, #357ABD);">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.total }}</span>
+            <span class="stat-label">Total de miembros</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #27AE60, #1E8449);">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.active }}</span>
+            <span class="stat-label">Activos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #E74C3C, #C0392B);">
+            <i class="fas fa-user-times"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.inactive }}</span>
+            <span class="stat-label">Inactivos</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #F39C12, #D68910);">
+            <i class="fas fa-hand-holding"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.with_loans }}</span>
+            <span class="stat-label">Con préstamos activos</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-filter"></i>
+            <span>Filtros</span>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button" onclick="toggleFilters()">
+            <i class="fas fa-chevron-down"></i>
+        </button>
+    </div>
+    <div class="card-body" id="filterBody">
+        <form method="GET" class="filter-form">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="search">Buscar</label>
+                    <input type="text" id="search" name="search" placeholder="Nombre, apellido o cédula..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="status">Estado</label>
+                    <select name="status" id="status">
+                        <option value="">Todos</option>
+                        <option value="Activo" {{ 'selected' if request.args.get('status') == 'Activo' }}>Activo</option>
+                        <option value="Inactivo" {{ 'selected' if request.args.get('status') == 'Inactivo' }}>Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Filtrar</button>
+                <a href="{{ url_for('members.list_members') }}" class="btn btn-ghost btn-sm"><i class="fas fa-undo"></i> Limpiar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title">
+            <i class="fas fa-list"></i>
+            <span>Listado de miembros</span>
+            <span class="badge">{{ pagination.total }}</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if members %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Apellidos y nombres</th>
+                        <th>Contacto</th>
+                        <th>Préstamos</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in members %}
+                    <tr>
+                        <td><span class="cedula">{{ m.cedula }}</span></td>
+                        <td>
+                            <a class="row-link" href="{{ url_for('members.detail', id=m.id) }}">{{ m.full_name() }}</a>
+                            <div class="student-meta">{{ m.address or '—' }}</div>
+                        </td>
+                        <td>
+                            <div>{{ m.phone or '—' }}</div>
+                            <div class="student-meta">{{ m.email or '—' }}</div>
+                        </td>
+                        <td>
+                            <span class="badge">{{ m.active_loan_count() }}</span>
+                            <div class="student-meta">{{ m.loans|length }} en historial</div>
+                        </td>
+                        <td>
+                            {% if m.status == 'Activo' %}
+                            <span class="status-badge status-active">Activo</span>
+                            {% else %}
+                            <span class="status-badge status-inactive">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('members.detail', id=m.id) }}" class="btn btn-icon btn-edit" title="Ver ficha">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('members.edit_member', id=m.id) }}" class="btn btn-icon btn-edit" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('members.delete_member', id=m.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este miembro? Esta acción no se puede deshacer.');">
+                                    {% include '_csrf.html' %}
+                                    <button type="submit" class="btn btn-icon btn-delete" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include '_pagination.html' %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-user-friends"></i>
+            {% if request.args.get('search') or request.args.get('status') %}
+            <h3>Sin resultados</h3>
+            <p>No hay miembros que coincidan con los filtros.</p>
+            {% else %}
+            <h3>No hay miembros registrados</h3>
+            <p>Registre al primer lector de la biblioteca.</p>
+            <a href="{{ url_for('members.create_member') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Registrar miembro</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleFilters() {
+    const body = document.getElementById('filterBody');
+    body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}
